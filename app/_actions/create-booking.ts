@@ -7,8 +7,8 @@ import { headers } from "next/headers";
 import { z } from "zod";
 
 const inputSchema = z.object({
-  serviceId: z.uuid(),
-  date: z.date(),
+  serviceId: z.string(), // aceita ULID/UUID
+  date: z.preprocess((arg) => (typeof arg === "string" ? new Date(arg) : arg), z.date()),
 });
 
 export const createBooking = actionClient
@@ -18,8 +18,8 @@ export const createBooking = actionClient
       headers: await headers(),
     });
     if (!session?.user) {
-      returnValidationErrors(inputSchema, {
-        _errors: ["Unauthorized"],
+      return returnValidationErrors(inputSchema, {
+        _errors: ["Usuário não logado, favor realizar o login para fazer o agendamento!"],
       });
     }
     const service = await prisma.barbershopService.findUnique({
@@ -28,7 +28,7 @@ export const createBooking = actionClient
       },
     });
     if (!service) {
-      returnValidationErrors(inputSchema, {
+      return returnValidationErrors(inputSchema, {
         _errors: ["Service not found"],
       });
     }
@@ -41,7 +41,7 @@ export const createBooking = actionClient
     });
     if (existingBooking) {
       console.error("Já existe um agendamento para essa data.");
-      returnValidationErrors(inputSchema, {
+       return returnValidationErrors(inputSchema, {
         _errors: ["Já existe um agendamento para essa data."],
       });
     }

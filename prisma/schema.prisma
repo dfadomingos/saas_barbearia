@@ -42,7 +42,7 @@ model Booking {
   user User @relation(fields: [userId], references: [id])
   date         DateTime  @db.Timestamptz //timestamp no postgress, timestampts mostra utc
   cancelled    Boolean?  @default(false) // ? deixa campo opcional 
-  cancellerdAt DateTime? @db.Timestamptz
+  cancelledAt DateTime? @db.Timestamptz
 }
 
 model User {
