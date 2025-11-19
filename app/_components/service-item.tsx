@@ -14,6 +14,9 @@ import { Calendar } from "./ui/calendar";
 import { Separator } from "./ui/separator";
 import { useState } from "react";
 import { ptBR } from "date-fns/locale";
+import { useAction } from "next-safe-action/hooks";
+import { createBooking } from "../_actions/create-booking";
+import { toast } from "sonner";
 
 interface ServiceItemProps {
   service: BarbershopService & {
@@ -46,6 +49,8 @@ const TIME_SLOTS = [
 export function ServiceItem({ service }: ServiceItemProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
+  const { executeAsync, isPending } = useAction(createBooking);
+  const [sheetIsOpen, setSheetIsOpen] = useState(false);
 
   const priceInReais = (service.priceInCents / 100).toLocaleString("pt-BR", {
     style: "currency",
@@ -64,8 +69,33 @@ export function ServiceItem({ service }: ServiceItemProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+    const handleConfirm = async () => {
+    // 10:00
+    if (!selectedTime || !selectedDate) {
+      return;
+    }
+    const timeSplitted = selectedTime.split(":"); // [10, 00]
+    const hours = timeSplitted[0];
+    const minutes = timeSplitted[1];
+    const date = new Date(selectedDate);
+    date.setHours(Number(hours), Number(minutes));
+
+    const result = await executeAsync({
+      serviceId: service.id,
+      date,
+    });
+    if (result.serverError || result.validationErrors) {
+      toast.error(result.validationErrors?._errors?.[0]);
+      return;
+    }
+    toast.success("Agendamento criado com sucesso!");
+    setSelectedDate(undefined);
+    setSelectedTime(undefined);
+    setSheetIsOpen(false);
+  };
+
   return (
-    <Sheet>
+    <Sheet open={sheetIsOpen} onOpenChange={setSheetIsOpen}>
       <div className="border-border bg-card flex items-center justify-center gap-3 rounded-2xl border border-solid p-3">
         <div className="relative size-[110px] shrink-0 overflow-hidden rounded-[10px]">
           <Image
@@ -118,7 +148,7 @@ export function ServiceItem({ service }: ServiceItemProps) {
             <>
               <Separator  />
 
-              <div className="flex gap-3 overflow-x-auto px-5 py-5 [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-3 overflow-x-auto px-5 [&::-webkit-scrollbar]:hidden shrink-0">
                 {TIME_SLOTS.map((time) => (
                   <Button
                     key={time}
@@ -166,7 +196,8 @@ export function ServiceItem({ service }: ServiceItemProps) {
               <div className="px-5 pb-6">
                 <Button
                   className="w-full rounded-full"
-                  disabled={isConfirmDisabled}
+                  disabled={isConfirmDisabled || isPending}
+                  onClick={handleConfirm}
                 >
                   Confirmar
                 </Button>
