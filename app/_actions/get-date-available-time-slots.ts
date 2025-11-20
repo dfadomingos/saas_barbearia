@@ -38,14 +38,16 @@ const TIME_SLOTS = [
 export const getDateAvailableTimeSlots = actionClient
     .inputSchema(inputSchema)
     .action(async ({ parsedInput: { barbershopId, date } }) => {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
-        if (!session?.user) {
-              return returnValidationErrors(inputSchema, {
-                _errors: ["Usuário não logado, favor realizar o login para fazer o agendamento!"],
-            });
-        }
+        // bloco comentado de modo a mostrar horarios disponiveis
+        // o usuario estando deslogado
+        //const session = await auth.api.getSession({
+        //    headers: await headers(),
+        //});
+        //if (!session?.user) {
+        //      return returnValidationErrors(inputSchema, {
+        //        _errors: ["Usuário não logado, favor realizar o login para fazer o agendamento!"],
+        //    });
+        //}
         const bookings = await prisma.booking.findMany({
             where: {
                 barbershopId: barbershopId,
