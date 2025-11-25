@@ -7,35 +7,43 @@ interface BookingItemProps {
     barbershopName: string;
     barbershopImageUrl: string;
     date: Date;
+    status: "confirmed" | "finished";
 }
 
-const BookingItem = ({serviceName, barbershopName, barbershopImageUrl, date}: BookingItemProps) => {
+const BookingItem = ({serviceName, barbershopName, barbershopImageUrl, date, status}: BookingItemProps) => {
     return(
         <Card className="flex flex-row items-center justify-between w-full min-w-full p-0">
 
             {/*esquerda*/}
             <div className="flex flex-col gap-4 flex-1 p-4">
-                <Badge>Confirmado</Badge>
+                <Badge
+                    className={
+                        status === "confirmed"
+                        ? "bg-primary/10 text-primary uppercase"
+                        : "bg-muted text-muted-foreground uppercase"
+                    }
+                > {status === "confirmed" ? "Confirmado" : "Finalizado"}
+                </Badge>
                 <div className="flex flex-col gap-2">
                     <p className="font-bold">{serviceName}</p>
                     <div className="flex items-center gap-2 5">
                         <Avatar className="h-6 w-6">
                             <AvatarImage src={barbershopImageUrl} />
                         </Avatar>
-                        <p className="text-muted-foreground text-sm">{barbershopName}</p>                        
+                        <p className="text-sm">{barbershopName}</p>                        
                     </div>
                 </div>
             </div>
 
             {/*direita*/}
-            <div className="flex flex-col items-center justify-center p-4 h-full border-l py-3">
+            <div className="flex h-full w-[106px] flex-col items-center justify-center border-l py-3">
                 <p className="text-xs capitalize">
                     {date.toLocaleDateString('pt-BR', {month: 'long'})}
                 </p>
-                <p>
-                    {date.toLocaleDateString('pt-BR', {day: '2-digit'})}
+                <p className="text-2xl">
+                {date.toLocaleDateString("pt-BR", { day: "2-digit" })}
                 </p>
-                <p className="text-xs capitalize">
+                <p className="text-xs">
                     {date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
                 </p>
             </div>
