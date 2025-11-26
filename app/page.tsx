@@ -2,7 +2,7 @@ import Header from "./_components/header";
 import SearchInput from "./_components/search-input";
 import Image from "next/image";
 import banner from '../public/banner.png';
-import BookingItem from "./_components/booking-item";
+
 import { prisma } from "@/lib/prisma";
 import BarbershopItem from "./_components/barbershop-item";
 import Footer from "./_components/ui/footer";
@@ -29,17 +29,7 @@ const Home = async () => {
           alt="Agende agora!" 
           sizes="100vw" 
           className="w-full h-auto"
-        />
-        <PageSection>
-          <PageSectionTitle>Agendamentos</PageSectionTitle>
-          <BookingItem 
-            serviceName="Corte de cabelo"
-            barbershopName="Barbearia do Joao"
-            barbershopImageUrl="https://utfs.io/f/c97a2dc9-cf62-468b-a851-bfd2bdde775f-16p.png"
-            date={new Date()}
-            status="confirmed"
-          />
-        </PageSection>
+        />       
         
         <PageSection>
           <PageSectionTitle>Recomendados</PageSectionTitle>
