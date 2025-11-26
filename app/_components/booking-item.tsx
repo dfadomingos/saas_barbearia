@@ -20,6 +20,17 @@ import { cancelBooking } from "../_actions/cancel-booking";
 import { toast } from "sonner";
 //import { X } from "lucide-react";
 //import { Separator } from "./ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 interface BookingItemProps {
   booking: {
@@ -204,13 +215,33 @@ const BookingItem = ({ booking }: BookingItemProps) => {
             Voltar
           </Button>
           {isConfirmed && (
-            <Button
-              variant="destructive"
-              className="flex-1 rounded-full"
-              onClick={handleCancelBooking}
-            >
-              Cancelar Reserva
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="flex-1 rounded-full">
+                  Cancelar Reserva
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Cancelar reserva
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja cancelar esta reserva? Esta ação não
+                    pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancelBooking}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </SheetContent>
