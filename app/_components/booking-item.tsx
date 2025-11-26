@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
+import { Booking } from "../generated/prisma/client";
 
 interface BookingItemProps {
   booking: {
@@ -49,6 +50,15 @@ interface BookingItemProps {
       phones: string[];
     };
   };
+}
+
+const getStatus = (booking: Pick<Booking, 'date' | 'cancelled'>) => {
+  if (booking.cancelled) {
+    return "cancelled";
+  }
+  const date = new Date(booking.date);
+    const now = new Date();
+    return date >= now ? "confirmed" : "finished";
 }
 
 const BookingItem = ({ booking }: BookingItemProps) => {
@@ -70,9 +80,8 @@ const BookingItem = ({ booking }: BookingItemProps) => {
     executeCancelBooking({ bookingId: booking.id });
   };
 
-  const date = new Date(booking.date);
-  const now = new Date();
-  const status = !booking.cancelled && date >= now ? "confirmed" : "finished";
+  const status = getStatus(booking);
+
   const isConfirmed = status === "confirmed";
 
   return (
@@ -87,7 +96,11 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                   : "bg-muted text-muted-foreground uppercase"
               }
             >
-              {status === "confirmed" ? "Confirmado" : "Finalizado"}
+              {status === "confirmed"
+                ? "Confirmado"
+                : status === "finished"
+                  ? "Finalizado"
+                  : "Cancelado"}              
             </Badge>
 
             <div className="flex flex-col gap-2">
@@ -103,13 +116,13 @@ const BookingItem = ({ booking }: BookingItemProps) => {
 
           <div className="flex h-full w-[106px] flex-col items-center justify-center border-l py-3">
             <p className="text-xs capitalize">
-              {date.toLocaleDateString("pt-BR", { month: "long" })}
+              {booking.date.toLocaleDateString("pt-BR", { month: "long" })}
             </p>
             <p className="text-2xl">
-              {date.toLocaleDateString("pt-BR", { day: "2-digit" })}
+              {booking.date.toLocaleDateString("pt-BR", { day: "2-digit" })}
             </p>
             <p className="text-xs">
-              {date.toLocaleTimeString("pt-BR", {
+              {booking.date.toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
@@ -174,7 +187,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
             <div className="text-muted-foreground flex items-center justify-between text-sm">
               <p>Data</p>
               <p>
-                {date.toLocaleDateString("pt-BR", {
+                {booking.date.toLocaleDateString("pt-BR", {
                   day: "2-digit",
                   month: "long",
                 })}
@@ -183,7 +196,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
             <div className="text-muted-foreground flex items-center justify-between text-sm">
               <p>Horário</p>
               <p>
-                {date.toLocaleTimeString("pt-BR", {
+                {booking.date.toLocaleTimeString("pt-BR", {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
