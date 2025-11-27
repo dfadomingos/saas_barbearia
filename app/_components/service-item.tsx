@@ -19,6 +19,8 @@ import { createBooking } from "../_actions/create-booking";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { getDateAvailableTimeSlots } from "../_actions/get-date-available-time-slots";
+import { createBookingCheckoutSession } from "../_actions/create-booking-checkout-session";
+import { loadStripe} from '@stripe/stripe-js';
 
 interface ServiceItemProps {
   service: BarbershopService & {
@@ -30,24 +32,30 @@ export function ServiceItem({ service }: ServiceItemProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const { executeAsync, isPending } = useAction(createBooking);
+  const { executeAsync: executeCreateBookingCheckoutSession } = useAction(
+    createBookingCheckoutSession,
+  );
   const [sheetIsOpen, setSheetIsOpen] = useState(false);
-  const {data: availableTimeSlots} = useQuery({
-    queryKey: ['date-available-time-slots', service.barbershopId, selectedDate],
-    queryFn: () => getDateAvailableTimeSlots({
-      barbershopId: service.barbershopId,
-      date: selectedDate!,
-    }),
+  const { data: availableTimeSlots } = useQuery({
+    queryKey: ["date-available-time-slots", service.barbershopId, selectedDate],
+    queryFn: () =>
+      getDateAvailableTimeSlots({
+        barbershopId: service.barbershopId,
+        date: selectedDate!,
+      }),
     enabled: Boolean(selectedDate),
   });
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-  }
+  };
 
   const priceInReais = (service.priceInCents / 100).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
+
+  const priceInReaisInteger = Math.floor(service.priceInCents / 100);
 
   const formattedDate = selectedDate
     ? selectedDate.toLocaleDateString("pt-BR", {
@@ -61,8 +69,11 @@ export function ServiceItem({ service }: ServiceItemProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-    const handleConfirm = async () => {
-    // 10:00
+  const handleConfirm = async () => {
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+      toast.error("Erro ao criar checkout session");
+      return;
+    }
     if (!selectedTime || !selectedDate) {
       return;
     }
@@ -71,19 +82,45 @@ export function ServiceItem({ service }: ServiceItemProps) {
     const minutes = timeSplitted[1];
     const date = new Date(selectedDate);
     date.setHours(Number(hours), Number(minutes));
+    const checkoutSessionResult = await executeCreateBookingCheckoutSession({
 
-    const result = await executeAsync({
       serviceId: service.id,
       date,
     });
-    if (result.serverError || result.validationErrors) {
-      toast.error(result.validationErrors?._errors?.[0]);
+    if (
+      checkoutSessionResult.serverError ||
+      checkoutSessionResult.validationErrors
+    ) {
+      toast.error(checkoutSessionResult.validationErrors?._errors?.[0]);
       return;
     }
-    toast.success("Agendamento criado com sucesso!");
-    setSelectedDate(undefined);
-    setSelectedTime(undefined);
-    setSheetIsOpen(false);
+    const stripe = await loadStripe(
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+    );
+    if (!stripe || !checkoutSessionResult.data?.id) {
+      toast.error("Erro ao carregar Stripe");
+      return;
+    }
+    await stripe.redirectToCheckout({
+      sessionId: checkoutSessionResult.data.id,
+    });
+    // // 10:00
+    // if (!selectedTime || !selectedDate) {
+    //   return;
+    // }
+
+    // const result = await executeAsync({
+    //   serviceId: service.id,
+    //   date,
+    // });
+    // if (result.serverError || result.validationErrors) {
+    //   toast.error(result.validationErrors?._errors?.[0]);
+    //   return;
+    // }
+    // toast.success("Agendamento criado com sucesso!");
+    // setSelectedDate(undefined);
+    // setSelectedTime(undefined);
+    // setSheetIsOpen(false);
   };
 
   return (
@@ -97,6 +134,7 @@ export function ServiceItem({ service }: ServiceItemProps) {
             className="object-cover"
           />
         </div>
+
         <div className="flex grow basis-0 flex-row items-center self-stretch">
           <div className="relative flex h-full min-h-0 min-w-0 grow basis-0 flex-col items-start justify-between">
             <div className="flex h-[67.5px] w-full flex-col items-start gap-1 text-sm leading-[1.4]">
@@ -107,8 +145,9 @@ export function ServiceItem({ service }: ServiceItemProps) {
                 {service.description}
               </p>
             </div>
+
             <div className="flex w-full items-center justify-between">
-              <p className="text-card-foreground whitespace-pre text-sm font-bold leading-[1.4]">
+              <p className="text-card-foreground text-sm leading-[1.4] font-bold whitespace-pre">
                 {priceInReais}
               </p>
               <SheetTrigger asChild>
@@ -138,7 +177,7 @@ export function ServiceItem({ service }: ServiceItemProps) {
 
           {selectedDate && (
             <>
-              <Separator  />
+              <Separator />
 
               <div className="flex gap-3 overflow-x-auto px-5 [&::-webkit-scrollbar]:hidden shrink-0">
                 {availableTimeSlots?.data?.map((time) => (
@@ -162,7 +201,7 @@ export function ServiceItem({ service }: ServiceItemProps) {
                       {service.name}
                     </p>
                     <p className="text-card-foreground text-sm font-bold">
-                      {priceInReais.replace("R$", "")}
+                      R${priceInReaisInteger},00
                     </p>
                   </div>
 
