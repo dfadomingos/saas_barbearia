@@ -37,16 +37,17 @@ model BarbershopService {
 }
 
 model Booking {
-  id           String            @id @default(ulid())
-  serviceId    String
-  service      BarbershopService @relation(fields: [serviceId], references: [id])
-  barbershopId String
-  barbershop   Barbershop        @relation(fields: [barbershopId], references: [id])
-  userId       String
-  user         User              @relation(fields: [userId], references: [id])
-  date         DateTime          @db.Timestamptz //timestamp no postgress, timestampts mostra utc
-  cancelled    Boolean?          @default(false) // ? deixa campo opcional 
-  cancelledAt  DateTime?         @db.Timestamptz
+  id             String            @id @default(ulid())
+  serviceId      String
+  service        BarbershopService @relation(fields: [serviceId], references: [id])
+  barbershopId   String
+  barbershop     Barbershop        @relation(fields: [barbershopId], references: [id])
+  userId         String
+  user           User              @relation(fields: [userId], references: [id])
+  date           DateTime          @db.Timestamptz //timestamp no postgress, timestampts mostra utc
+  cancelled      Boolean?          @default(false) // ? deixa campo opcional 
+  cancelledAt    DateTime?         @db.Timestamptz
+  stripeChargeId String?
 }
 
 model User {
