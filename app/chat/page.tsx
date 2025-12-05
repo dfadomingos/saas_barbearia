@@ -40,6 +40,8 @@ export default function ChatPage() {
     }),
   });
 
+    console.log({ messages });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -62,22 +64,30 @@ export default function ChatPage() {
 
   return (
     <div className="relative flex h-screen w-full flex-col overflow-hidden rounded-[20px] bg-[var(--background)]">
-      <div className="flex w-[390px] items-center justify-between pb-0 pl-5 pr-5 pt-6">
+      <div className="flex w-[390px] items-center justify-between pt-6 pr-5 pb-0 pl-5">
         <Link href="/">
           <ChevronLeft className="size-6 shrink-0" />
         </Link>
-        <p className="font-merriweather whitespace-pre text-nowrap text-[20px] italic leading-[1.4] tracking-[-1px] text-[var(--foreground)]">
+        <p className="font-merriweather text-[20px] leading-[1.4] tracking-[-1px] text-nowrap whitespace-pre text-[var(--foreground)] italic">
           Aparatus
         </p>
         <div className="flex items-center justify-end gap-[15px]" />
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-24 [&::-webkit-scrollbar]:hidden">
+      <div className="w-full flex-1 overflow-y-auto pb-24 [&::-webkit-scrollbar]:hidden">
         {messages.length === 0
           ? INITIAL_MESSAGES.map((msg) => (
               <ChatMessage key={msg.id} message={msg} />
             ))
-          : messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
+          : messages.map((msg, index) => (
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                isStreaming={
+                  status === "streaming" && index === messages.length - 1
+                }
+              />
+            ))}
         <div ref={messagesEndRef} />
       </div>
 
