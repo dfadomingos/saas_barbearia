@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  serverExternalPackages: ["@prisma/client", "prisma"],  
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./app/generated/prisma/**/*"],
+  },
 };
 
 export default nextConfig;

@@ -39,9 +39,7 @@ export default function ChatPage() {
       api: "/api/chat",
     }),
   });
-
-    console.log({ messages });
-
+   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
