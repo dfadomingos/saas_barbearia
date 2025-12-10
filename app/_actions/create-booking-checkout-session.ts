@@ -11,11 +11,12 @@ import { format } from "date-fns";
 const inputSchema = z.object({
   serviceId: z.string(), // aceita ULID/UUID
   date: z.preprocess((arg) => (typeof arg === "string" ? new Date(arg) : arg), z.date()),
+  bookingId: z.string().optional(),
 });
 
 export const createBookingCheckoutSession = actionClient
   .inputSchema(inputSchema)
-  .action(async ({ parsedInput: { serviceId, date } }) => {
+  .action(async ({ parsedInput: { serviceId, date, bookingId }, parsedInput }) => {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
@@ -49,10 +50,10 @@ export const createBookingCheckoutSession = actionClient
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}`,
       metadata: {
-        serviceId: service.id,
         barbershopId: service.barbershopId,
         userId: session.user.id,
         date: date.toISOString(),
+        bookingId: parsedInput.bookingId || "",
       },
       line_items: [
         {

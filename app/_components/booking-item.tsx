@@ -18,6 +18,8 @@ import { Button } from "./ui/button";
 import { useAction } from "next-safe-action/hooks";
 import { cancelBooking } from "../_actions/cancel-booking";
 import { toast } from "sonner";
+import { createBookingCheckoutSession } from "../_actions/create-booking-checkout-session";
+import { loadStripe } from "@stripe/stripe-js";
 //import { X } from "lucide-react";
 //import { Separator } from "./ui/separator";
 import {
@@ -38,7 +40,9 @@ interface BookingItemProps {
     id: string;
     date: Date;
     cancelled: boolean | null;
+    paid: boolean;
     service: {
+      id: string;
       name: string;
       priceInCents: number;
     };
@@ -76,6 +80,41 @@ const BookingItem = ({ booking }: BookingItemProps) => {
     },
   });
 
+  const { executeAsync: executeCreateBookingCheckoutSession } = useAction(
+    createBookingCheckoutSession,
+  );
+
+  const handlePay = async () => {
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+      toast.error("Erro ao criar checkout session");
+      return;
+    }
+
+    const checkoutSessionResult = await executeCreateBookingCheckoutSession({
+      serviceId: booking.service.id,
+      date: booking.date,
+      bookingId: booking.id,
+    });
+
+    if (
+      checkoutSessionResult.serverError ||
+      checkoutSessionResult.validationErrors
+    ) {
+      toast.error(checkoutSessionResult.validationErrors?._errors?.[0]);
+      return;
+    }
+    const stripe = await loadStripe(
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+    );
+    if (!stripe || !checkoutSessionResult.data?.id) {
+      toast.error("Erro ao carregar Stripe");
+      return;
+    }
+    await stripe.redirectToCheckout({
+      sessionId: checkoutSessionResult.data.id,
+    });
+  };
+
   const handleCancelBooking = () => {
     executeCancelBooking({ bookingId: booking.id });
   };
@@ -111,6 +150,18 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                 </Avatar>
                 <p className="text-sm">{booking.barbershop.name}</p>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+               <div className="flex items-center gap-2">
+                   {!booking.cancelled && (booking.paid || isConfirmed) && (
+                    <Badge className={
+                       booking.paid ? "bg-green-500 text-white" : "bg-yellow-500 text-black hover:bg-yellow-400"
+                   }>
+                       {booking.paid ? "Pago" : "Pagamento em espera"}
+                   </Badge>
+                   )}
+               </div>
             </div>
           </div>
 
@@ -227,6 +278,14 @@ const BookingItem = ({ booking }: BookingItemProps) => {
           >
             Voltar
           </Button>
+          {!booking.paid && booking.cancelled === false && isConfirmed && (
+               <Button
+               className="flex-1 rounded-full"
+               onClick={handlePay}
+             >
+               Realizar Pagamento
+             </Button>
+          )}
           {isConfirmed && (
             <AlertDialog>
               <AlertDialogTrigger asChild>

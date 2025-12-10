@@ -19,40 +19,53 @@ export const POST = async (request: Request) => {
     
     if(event.type === "checkout.session.completed") {
         const session = event.data.object;
-        const date = session.metadata?.date ? new Date(session.metadata.date) : null;
-        const serviceId = session.metadata?.serviceId;
-        const barbershopId = session.metadata?.barbershopId;
-        const userId = session.metadata?.userId;
-        
-        if(!date || !serviceId || !barbershopId || !userId) {
-            return NextResponse.error();
-        }
+        const bookingId = session.metadata?.bookingId;
 
-
-    // Retrieve session with expanded payment_intent to get chargeId
-    const expandedSession = await stripe.checkout.sessions.retrieve(
-      session.id,
-      {
-        expand: ["payment_intent"],
-      },
-    );
-
-    // Extract chargeId from payment_intent
-    const paymentIntent = expandedSession.payment_intent as Stripe.PaymentIntent;
-    const chargeId =
-      typeof paymentIntent?.latest_charge === "string"
-        ? paymentIntent.latest_charge
-        : paymentIntent?.latest_charge?.id;
-
-        await prisma.booking.create({
-            data: {
-                barbershopId,
-                serviceId,
-                date,
-                userId,
-                stripeChargeId: chargeId || null,
+        // Retrieve session with expanded payment_intent to get chargeId
+        const expandedSession = await stripe.checkout.sessions.retrieve(
+            session.id,
+            {
+                expand: ["payment_intent"],
             },
-        });
+        );
+
+        // Extract chargeId from payment_intent
+        const paymentIntent = expandedSession.payment_intent as Stripe.PaymentIntent;
+        const chargeId =
+            typeof paymentIntent?.latest_charge === "string"
+                ? paymentIntent.latest_charge
+                : paymentIntent?.latest_charge?.id;
+
+        if (bookingId) {
+            await prisma.booking.update({
+                where: {
+                    id: bookingId,
+                },
+                data: {
+                    paid: true,
+                    stripeChargeId: chargeId || null,
+                },
+            });
+        } else {
+             // Fallback for legacy or direct payments not linked to pre-created booking
+            const date = session.metadata?.date ? new Date(session.metadata.date) : null;
+            const serviceId = session.metadata?.serviceId;
+            const barbershopId = session.metadata?.barbershopId;
+            const userId = session.metadata?.userId;
+
+            if (date && serviceId && barbershopId && userId) {
+                 await prisma.booking.create({
+                    data: {
+                        barbershopId,
+                        serviceId,
+                        date,
+                        userId,
+                        stripeChargeId: chargeId || null,
+                        paid: true,
+                    },
+                });
+            }
+        }
     }
     revalidatePath("/bookings")
     return NextResponse.json({ received: true });

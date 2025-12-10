@@ -49,6 +49,7 @@ model Booking {
   cancelled      Boolean?          @default(false) // ? deixa campo opcional 
   cancelledAt    DateTime?         @db.Timestamptz
   stripeChargeId String?
+  paid           Boolean   @default(false)
 }
 
 model User {

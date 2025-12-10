@@ -10,6 +10,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "./ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 import { Calendar } from "./ui/calendar";
 import { Separator } from "./ui/separator";
 import { useState } from "react";
@@ -69,62 +80,86 @@ export function ServiceItem({ service }: ServiceItemProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const handleConfirm = async () => {
-    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-      toast.error("Erro ao criar checkout session");
-      return;
-    }
+  const [paymentSheetIsOpen, setPaymentSheetIsOpen] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+
+  const handleBookingSubmit = async () => {
     if (!selectedTime || !selectedDate) {
       return;
     }
-    const timeSplitted = selectedTime.split(":"); // [10, 00]
+    const timeSplitted = selectedTime.split(":");
     const hours = timeSplitted[0];
     const minutes = timeSplitted[1];
     const date = new Date(selectedDate);
     date.setHours(Number(hours), Number(minutes));
-    const checkoutSessionResult = await executeCreateBookingCheckoutSession({
 
+    const result = await executeAsync({
       serviceId: service.id,
       date,
     });
-    if (
-      checkoutSessionResult.serverError ||
-      checkoutSessionResult.validationErrors
-    ) {
-      toast.error(checkoutSessionResult.validationErrors?._errors?.[0]);
-      return;
-    }
-    const stripe = await loadStripe(
-      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-    );
-    if (!stripe || !checkoutSessionResult.data?.id) {
-      toast.error("Erro ao carregar Stripe");
-      return;
-    }
-    await stripe.redirectToCheckout({
-      sessionId: checkoutSessionResult.data.id,
-    });
-    // // 10:00
-    // if (!selectedTime || !selectedDate) {
-    //   return;
-    // }
 
-    // const result = await executeAsync({
-    //   serviceId: service.id,
-    //   date,
-    // });
-    // if (result.serverError || result.validationErrors) {
-    //   toast.error(result.validationErrors?._errors?.[0]);
-    //   return;
-    // }
-    // toast.success("Agendamento criado com sucesso!");
-    // setSelectedDate(undefined);
-    // setSelectedTime(undefined);
-    // setSheetIsOpen(false);
-  };
+    if (result.serverError || result.validationErrors) {
+      toast.error(result.validationErrors?._errors?.[0] || "Erro ao criar agendamento.");
+      return;
+    }
+    
+    if (!result.data?.id) {
+       toast.error("Erro ao criar agendamento.");
+       return;
+    }
+
+    setBookingId(result.data.id);
+    setPaymentSheetIsOpen(true);
+    setSheetIsOpen(false);
+  }
+
+  const handlePayNow = async () => {
+      if (!bookingId) return;
+
+       if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+        toast.error("Erro ao criar checkout session");
+        return;
+      }
+
+      const checkoutSessionResult = await executeCreateBookingCheckoutSession({
+        serviceId: service.id,
+        date: selectedDate!, // passing date largely for metadata redundance, checkout session uses bookingId mostly now
+        bookingId: bookingId,
+      });
+
+      if (
+        checkoutSessionResult.serverError ||
+        checkoutSessionResult.validationErrors
+      ) {
+        toast.error(checkoutSessionResult.validationErrors?._errors?.[0]);
+        return;
+      }
+      const stripe = await loadStripe(
+        process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+      );
+      if (!stripe || !checkoutSessionResult.data?.id) {
+        toast.error("Erro ao carregar Stripe");
+        return;
+      }
+      await stripe.redirectToCheckout({
+        sessionId: checkoutSessionResult.data.id,
+      });
+  }
+  
+  const handlePayLater = () => {
+      toast.success("Agendamento criado com sucesso!");
+      setBookingId(null);
+      setPaymentSheetIsOpen(false);
+      setSelectedDate(undefined);
+      setSelectedTime(undefined);
+  }
+
+  // Renaming old handleConfirm to avoid confusion, or just removing it.
+  // The JSX currently calls handleConfirm. I should execute handleBookingSubmit instead.
 
   return (
-    <Sheet open={sheetIsOpen} onOpenChange={setSheetIsOpen}>
+    <>
+      <Sheet open={sheetIsOpen} onOpenChange={setSheetIsOpen}>
       <div className="border-border bg-card flex items-center justify-center gap-3 rounded-2xl border border-solid p-3">
         <div className="relative size-[110px] shrink-0 overflow-hidden rounded-[10px]">
           <Image
@@ -228,7 +263,7 @@ export function ServiceItem({ service }: ServiceItemProps) {
                 <Button
                   className="w-full rounded-full"
                   disabled={isConfirmDisabled || isPending}
-                  onClick={handleConfirm}
+                  onClick={handleBookingSubmit}
                 >
                   Confirmar
                 </Button>
@@ -238,5 +273,20 @@ export function ServiceItem({ service }: ServiceItemProps) {
         </div>
       </SheetContent>
     </Sheet>
+      <AlertDialog open={paymentSheetIsOpen} onOpenChange={setPaymentSheetIsOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deseja realizar o pagamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você pode pagar agora para agilizar o atendimento ou pagar depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handlePayLater}>Pagar depois</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePayNow}>Pagar agora</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
