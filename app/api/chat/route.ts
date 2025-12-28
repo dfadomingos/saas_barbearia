@@ -9,7 +9,7 @@ import { createBooking } from "@/app/_actions/create-booking";
 export const POST = async (request: Request) => {
   const { messages } = await request.json();
   const result = streamText({
-    model: google("gemini-2.0-flash"),
+    model: google("gemini-2.5-flash"),
     stopWhen: stepCountIs(10),
     system: `Você é o Agenda.ai, um assistente virtual de agendamento de barbearias.
 
@@ -79,7 +79,7 @@ export const POST = async (request: Request) => {
     - Não liste TODOS os horários disponíveis, sugira apenas 4-5 opções espaçadas ao longo do dia
     - Se não houver horários disponíveis, sugira uma data alternativa
     - Quando o usuário mencionar "hoje", "amanhã", "depois de amanhã" ou dias da semana, calcule a data correta automaticamente`,
-    messages: convertToModelMessages(messages),
+    messages: await convertToModelMessages(messages),
     tools: {
       searchBarbershops: tool({
         description:
