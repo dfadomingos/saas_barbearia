@@ -270,50 +270,90 @@ const BookingItem = ({ booking }: BookingItemProps) => {
         </div>
 
         {/* Botões no rodapé */}
-        <div className="flex gap-3 px-5 pb-6">
-          <Button
-            variant="outline"
-            className="flex-1 rounded-full"
-            onClick={() => setSheetIsOpen(false)}
-          >
-            Voltar
-          </Button>
-          {!booking.paid && booking.cancelled === false && isConfirmed && (
-               <Button
-               className="flex-1 rounded-full"
-               onClick={handlePay}
-             >
-               Realizar Pagamento
-             </Button>
-          )}
-          {isConfirmed && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex-1 rounded-full">
-                  Cancelar Reserva
+        {/* Botões no rodapé */}
+        <div className="px-5 pb-6">
+          {!booking.paid &&
+          booking.cancelled === false &&
+          isConfirmed ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-full"
+                  onClick={() => setSheetIsOpen(false)}
+                >
+                  Voltar
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Cancelar reserva
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja cancelar esta reserva? Esta ação não
-                    pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Voltar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleCancelBooking}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Confirmar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <Button className="flex-1 rounded-full" onClick={handlePay}>
+                  Realizar Pagamento
+                </Button>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full rounded-full">
+                    Cancelar Reserva
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancelar reserva</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja cancelar esta reserva? Esta ação
+                      não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Voltar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelBooking}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-full"
+                onClick={() => setSheetIsOpen(false)}
+              >
+                Voltar
+              </Button>
+              {isConfirmed && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="flex-1 rounded-full"
+                    >
+                      Cancelar Reserva
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancelar reserva</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja cancelar esta reserva? Esta ação
+                        não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Voltar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleCancelBooking}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Confirmar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           )}
         </div>
       </SheetContent>
